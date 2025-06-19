@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, ArrowLeft } from "lucide-react";
-import api from "@/lib/api"; // Sửa từ { api } thành default import
+import { forgotPassword } from "@/lib/api"; // Import named export forgotPassword
 import { useRouter } from "next/router";
 
 // Định nghĩa giao diện cho phản hồi từ forgotPassword
@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError("");
     try {
-      const response = await api.forgotPassword({ email });
+      const response = await forgotPassword({ email }); // Sử dụng forgotPassword trực tiếp
       if (response.data.success) {
         alert(response.data.message);
         router.push("/auth/login");
@@ -124,3 +124,6 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+
+
+
