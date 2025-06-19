@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -6,7 +6,9 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/api";
+import { ArrowLeft } from "lucide-react";
+import api from "@/lib/api"; // Sử dụng default import cho api
+import { updateProfile } from "@/lib/api"; // Import named export updateProfile
 import { useRouter } from "next/router";
 
 const containerVariants = {
@@ -71,13 +73,13 @@ export default function ProfilePage() {
     e.preventDefault();
     setError("");
     try {
-      const response = await api.updateProfile(formData);
-      if (response.message) {
+      const response = await updateProfile(formData); // Sử dụng updateProfile trực tiếp
+      if (response.data.message) {
         alert("Cập nhật hồ sơ thành công!");
         router.push("/dashboard");
       }
-    } catch (err) {
-      setError(err.message || "Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.");
     }
   };
 

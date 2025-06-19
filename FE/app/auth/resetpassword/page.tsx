@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -7,9 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock, ArrowLeft } from "lucide-react";
-import { api } from "@/lib/api";
+import api from "@/lib/api"; // Sử dụng default import cho api
+import { resetPassword } from "@/lib/api"; // Import named export resetPassword
 import { useRouter } from "next/router";
 import { useSearchParams } from "next/navigation";
+
+// Định nghĩa giao diện cho phản hồi từ resetPassword
+interface ResetPasswordResponse {
+  message: string;
+  success: boolean;
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -38,11 +45,15 @@ export default function ResetPasswordPage() {
       return;
     }
     try {
-      const response = await api.resetPassword({ token, email, password, password_confirmation: passwordConfirmation });
-      alert(response.message);
-      router.push("/auth/login");
-    } catch (err) {
-      setError(err.message || "Không thể đặt lại mật khẩu. Vui lòng kiểm tra lại.");
+      const response = await resetPassword({ token, email, password, password_confirmation: passwordConfirmation }); // Sử dụng resetPassword trực tiếp
+      if (response.data.success) {
+        alert(response.data.message);
+        router.push("/auth/login");
+      } else {
+        setError(response.data.message || "Không thể đặt lại mật khẩu. Vui lòng kiểm tra lại.");
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Không thể đặt lại mật khẩu. Vui lòng kiểm tra lại.");
     }
   };
 
