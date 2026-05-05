@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -182,8 +184,50 @@ class AuthController extends Controller
 
     public function handleGoogleCallback()
     {
-        $user = Socialite::driver('google')->user();
-        $this->handleSocialLogin($user, 'google');
+        try {
+            $user = Socialite::driver('google')->user();
+            Log::info('Google Callback Success', ['user' => $user->getEmail()]);
+            return $this->handleSocialLogin($user, 'google');
+        } catch (\Exception $e) {
+            Log::error('Google Callback Error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Đăng nhập Google thất bại: ' . $e->getMessage()], 400);
+        }
+    }
+
+    public function handleGoogleToken(Request $request)
+    {
+        try {
+            $accessToken = $request->input('access_token');
+            if (!$accessToken) {
+                return response()->json(['message' => 'Access token is required'], 400);
+            }
+
+            // Get user info from Google using the access token
+            $response = Http::get('https://www.googleapis.com/oauth2/v2/userinfo', [
+                'access_token' => $accessToken
+            ]);
+
+            if (!$response->successful()) {
+                return response()->json(['message' => 'Invalid access token'], 400);
+            }
+
+            $googleUser = $response->json();
+
+            // Create a mock Socialite user object
+            $socialiteUser = new \Laravel\Socialite\Two\User();
+            $socialiteUser->map([
+                'id' => $googleUser['id'],
+                'email' => $googleUser['email'],
+                'name' => $googleUser['name'],
+                'avatar' => $googleUser['picture'] ?? null,
+            ]);
+
+            Log::info('Google Token Success', ['user' => $socialiteUser->getEmail()]);
+            return $this->handleSocialLogin($socialiteUser, 'google');
+        } catch (\Exception $e) {
+            Log::error('Google Token Error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Đăng nhập Google thất bại: ' . $e->getMessage()], 400);
+        }
     }
 
     public function redirectToFacebook()
@@ -193,8 +237,51 @@ class AuthController extends Controller
 
     public function handleFacebookCallback()
     {
-        $user = Socialite::driver('facebook')->user();
-        $this->handleSocialLogin($user, 'facebook');
+        try {
+            $user = Socialite::driver('facebook')->user();
+            Log::info('Facebook Callback Success', ['user' => $user->getEmail()]);
+            return $this->handleSocialLogin($user, 'facebook');
+        } catch (\Exception $e) {
+            Log::error('Facebook Callback Error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Đăng nhập Facebook thất bại: ' . $e->getMessage()], 400);
+        }
+    }
+
+    public function handleFacebookToken(Request $request)
+    {
+        try {
+            $accessToken = $request->input('access_token');
+            if (!$accessToken) {
+                return response()->json(['message' => 'Access token is required'], 400);
+            }
+
+            // Get user info from Facebook using the access token
+            $response = Http::get('https://graph.facebook.com/me', [
+                'access_token' => $accessToken,
+                'fields' => 'id,name,email,picture'
+            ]);
+
+            if (!$response->successful()) {
+                return response()->json(['message' => 'Invalid access token'], 400);
+            }
+
+            $facebookUser = $response->json();
+
+            // Create a mock Socialite user object
+            $socialiteUser = new \Laravel\Socialite\Two\User();
+            $socialiteUser->map([
+                'id' => $facebookUser['id'],
+                'email' => $facebookUser['email'] ?? null,
+                'name' => $facebookUser['name'],
+                'avatar' => $facebookUser['picture']['data']['url'] ?? null,
+            ]);
+
+            Log::info('Facebook Token Success', ['user' => $socialiteUser->getEmail()]);
+            return $this->handleSocialLogin($socialiteUser, 'facebook');
+        } catch (\Exception $e) {
+            Log::error('Facebook Token Error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'Đăng nhập Facebook thất bại: ' . $e->getMessage()], 400);
+        }
     }
 
     protected function handleSocialLogin($socialUser, $provider)

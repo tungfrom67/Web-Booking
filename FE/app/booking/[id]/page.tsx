@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar, Clock, Users, ChevronLeft, Check, Info, Shield } from "lucide-react"
 import { hotelsData } from "@/data/hotels"
+import { getHotelDetail } from "@/lib/api"
 import { format, addDays, differenceInDays } from "date-fns"
 import { vi } from "date-fns/locale"
 import { PaymentProcessor } from "@/components/payment-processor"
@@ -52,14 +53,39 @@ export default function BookingPage() {
   })
 
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      const foundHotel = hotelsData.find((h) => h.id === hotelId)
-      setHotel(foundHotel)
-      setIsLoading(false)
-    }, 500)
+    const fetchHotel = async () => {
+      try {
+        const response = await getHotelDetail(hotelId)
+        const apiHotel = response.data
+        const transformed = {
+          id: String(apiHotel.id),
+          name: apiHotel.name,
+          address: apiHotel.address,
+          destination: apiHotel.area?.city?.name || '',
+          images: apiHotel.images?.map((img: any) => img.image_url) || [],
+          rooms: apiHotel.rooms?.map((room: any) => ({
+            id: String(room.id),
+            name: room.name,
+            description: room.description,
+            price: Number(room.base_price),
+            discount: Number(room.discount_percentage) || 0,
+            maxOccupancy: room.max_occupancy,
+            bedType: room.bed_configuration || 'King bed',
+            images: room.images?.map((img: any) => img.image_url) || ['/placeholder.svg'],
+            features: room.amenities?.map((a: any) => a.name) || [],
+          })) || [],
+        }
+        setHotel(transformed)
+      } catch (error) {
+        console.warn('API unavailable, using static data:', error)
+        const foundHotel = hotelsData.find((h) => h.id === hotelId)
+        setHotel(foundHotel || null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-    return () => clearTimeout(timer)
+    fetchHotel()
   }, [hotelId])
 
   if (isLoading) {
