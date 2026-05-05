@@ -16,19 +16,11 @@ return [
     */
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
-
-    'allowed_methods' => ['*'],
-
-    'allowed_origins' => ['*'],
-
-    'allowed_origins_patterns' => [],
-
-    'allowed_headers' => ['*'],
-
+    'allowed_methods' => ['*'], // Cho phép tất cả phương thức (GET, POST, etc.)
+    'allowed_origins' => ['http://localhost:3000', 'https://localhost:3000'], // Cho phép FE truy cập cả HTTP và HTTPS
+    'allowed_headers' => ['*'], // Cho phép tất cả header
     'exposed_headers' => [],
-
     'max_age' => 0,
-
-    'supports_credentials' => false,
+    'supports_credentials' => true, // Cho phép gửi cookie/token nếu cần
 
 ];

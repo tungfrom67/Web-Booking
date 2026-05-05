@@ -28,6 +28,7 @@ import { RoomCard } from "@/components/room-card"
 import { ReviewSection } from "@/components/review-section"
 import { BookingWidget } from "@/components/booking-widget"
 import { hotelsData } from "@/data/hotels"
+import { getHotelDetail } from "@/lib/api"
 import { Dumbbell } from "lucide-react"
 import { DumbbellIcon as Dumb } from "lucide-react" // Import the missing JSX variable
 
@@ -42,14 +43,62 @@ export default function HotelDetailPage() {
   const [hotel, setHotel] = useState<any>(null)
 
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      const foundHotel = hotelsData.find((h) => h.id === hotelId)
-      setHotel(foundHotel)
-      setIsLoading(false)
-    }, 500)
+    const fetchHotel = async () => {
+      try {
+        const response = await getHotelDetail(hotelId)
+        const apiHotel = response.data
 
-    return () => clearTimeout(timer)
+        // Transform API data to match component format
+        const transformed = {
+          id: String(apiHotel.id),
+          name: apiHotel.name,
+          address: apiHotel.address,
+          destination: apiHotel.area?.city?.name || '',
+          description: apiHotel.description,
+          rating: apiHotel.review_rating || apiHotel.star_rating,
+          reviewCount: apiHotel.review_count || 0,
+          starRating: apiHotel.star_rating,
+          images: apiHotel.images?.map((img: any) => img.image_url) || [],
+          amenities: apiHotel.amenities?.map((a: any) => a.name) || [],
+          checkInTime: apiHotel.check_in_time || '14:00',
+          checkOutTime: apiHotel.check_out_time || '12:00',
+          rooms: apiHotel.rooms?.map((room: any) => ({
+            id: String(room.id),
+            name: room.name,
+            description: room.description,
+            price: Number(room.base_price),
+            discount: Number(room.discount_percentage) || 0,
+            maxOccupancy: room.max_occupancy,
+            bedType: room.bed_configuration || 'King bed',
+            size: room.size_sqm ? `${room.size_sqm}m²` : '',
+            images: room.images?.map((img: any) => img.image_url) || ['/placeholder.svg'],
+            features: room.amenities?.map((a: any) => a.name) || [],
+            policies: room.policies || [],
+          })) || [],
+          reviews: apiHotel.reviews?.map((r: any) => ({
+            id: r.id,
+            user: `${r.user?.first_name || ''} ${r.user?.last_name || ''}`,
+            avatar: r.user?.avatar || '/placeholder.svg',
+            rating: r.overall_rating,
+            date: r.created_at,
+            comment: r.comment,
+            title: r.title,
+          })) || [],
+          specialOffers: apiHotel.special_offers || [],
+        }
+
+        setHotel(transformed)
+      } catch (error) {
+        // Fallback to static data if API fails
+        console.warn('API unavailable, using static data:', error)
+        const foundHotel = hotelsData.find((h) => h.id === hotelId)
+        setHotel(foundHotel || null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchHotel()
   }, [hotelId])
 
   if (isLoading) {
